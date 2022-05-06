@@ -1,0 +1,83 @@
+{%- macro render_param(name, val) -%}
+{%-   if val in [true, false] -%}
+{{ name }}="{{ 'on' if val else 'off' }}"
+{%-   else -%}
+{{ name }}="{{ val }}"
+{%-   endif -%}
+{%- endmacro %}
+
+{%- macro render_params(params) -%}
+{%-   for var, val in params.items() %}
+  {{ render_param(var, val) }}
+{%-   endfor %}
+{%- endmacro -%}
+
+{%- macro render_module(load, params) %}
+module(load="{{ load }}"
+{{- render_params(params) }}
+)
+{%- endmacro %}
+
+{%- macro render_include(name, type="file", mode=None) %}
+include({{ type }}="{{ name }}" {%- if mode is not none %} mode="{{ mode }}"{% endif -%} )
+{%- endmacro %}
+
+# /etc/rsyslog.conf configuration file for rsyslog
+#
+# For more information install rsyslog-doc and see
+# /usr/share/doc/rsyslog-doc/html/configuration/index.html
+
+# Managed by Salt.
+# Manual changes might be overwritten.
+
+#################
+#### MODULES ####
+#################
+
+{%- for name, conf in rsyslog.config.modules.items() %}
+{%-   if conf.get('enabled', false) %}
+{{- render_module(name, conf.get('parameters', [])) }}
+{%    endif %}
+{%- endfor %}
+
+
+###########################
+#### GLOBAL DIRECTIVES ####
+###########################
+
+{%- if rsyslog.config.global %}
+
+global(
+{{- render_params(rsyslog.config.global) }}
+)
+{%- endif %}
+
+{%- if rsyslog.config.modules.omfile.parameters | default(false) %}
+
+{{ render_module("builtin:omfile", rsyslog.config.modules.omfile.parameters) }}
+{%- endif %}
+
+{%- if rsyslog.lookup.configd %}
+
+{{ render_include(rsyslog.lookup.configd | path_join("*.conf"), mode="optional") }}
+{%- endif %}
+
+{%- for inc in rsyslog.config.get('include', []) %}
+{%-   if inc is mapping %}
+{%-     set mode = inc.get("mode") %}
+{%-     set type = inc.get("type", "file") %}
+{%-     set inc = inc.name %}
+{%-   else %}
+{%-     set mode = None %}
+{%-     set type = "file" %}
+{%-   endif %}
+{{ render_include(inc, type=type, mode=mode) }}
+{%- endfor %}
+
+
+###############
+#### RULES ####
+###############
+{% for output in rsyslog.config.get('outputs', []) %}
+{{ output.filter ~ ' ' ~ ' ' * (19 - output.filter | length) ~ ('-' if not output.get('sync', true) else '') ~ output.target }}
+{%- endfor %}

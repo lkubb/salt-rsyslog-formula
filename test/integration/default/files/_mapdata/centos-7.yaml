@@ -1,0 +1,98 @@
+# yamllint disable rule:indentation rule:line-length
+# CentOS Linux-7
+---
+values:
+  added_in_defaults: defaults_value
+  added_in_lookup: lookup_value
+  added_in_pillar: pillar_value
+  lookup:
+    arch: amd64
+    rootgroup: root
+    config: '/etc/rsyslog.conf'
+    service:
+      name: rsyslog
+    configd: /etc/rsyslog.d
+  config:
+    global:
+      umask: '0022'
+      workDirectory: /var/spool/rsyslog
+    include: []
+    modules:
+      imklog:
+        enabled: true
+        parameters: {}
+      imuxsock:
+        enabled: true
+        parameters: {}
+      omfile:
+        parameters:
+          DirCreateMode: '0755'
+          FileCreateMode: '0640'
+          Template: RSYSLOG_TraditionalFileFormat
+          fileGroup: adm
+          fileOwner: root
+    outputs:
+      - filter: auth,authpriv.*
+        target: /var/log/auth.log
+      - filter: '*.*;auth,authpriv.none'
+        sync: false
+        target: /var/log/syslog
+      - filter: daemon.*
+        sync: false
+        target: /var/log/daemon.log
+      - filter: kern.*
+        sync: false
+        target: /var/log/kern.log
+      - filter: lpr.*
+        sync: false
+        target: /var/log/lpr.log
+      - filter: mail.*
+        sync: false
+        target: /var/log/mail.log
+      - filter: user.*
+        sync: false
+        target: /var/log/user.log
+      - filter: mail.info
+        sync: false
+        target: /var/log/mail.info
+      - filter: mail.warn
+        sync: false
+        target: /var/log/mail.warn
+      - filter: mail.err
+        target: /var/log/mail.err
+      - filter: '*.=debug;auth,authpriv.none;mail.none'
+        sync: false
+        target: /var/log/debug
+      - filter: '*.=info;*.=notice;*.=warn;auth,authpriv.none;cron,daemon.none;mail.none'
+        sync: false
+        target: /var/log/messages
+      - filter: '*.emerg'
+        target: :omusrmsg:*
+  custom: {}
+  server:
+    enabled: false
+    inputs: {}
+    modules: {}
+    rulesets: {}
+    templates: {}
+  map_jinja:
+    sources:
+    - Y:G@osarch
+    - Y:G@os_family
+    - Y:G@os
+    - Y:G@osfinger
+    - C@rsyslog
+    - Y:G@id
+  master: template-master
+  tofs:
+    files_switch:
+    - any/path/can/be/used/here
+    - id
+    - roles
+    - osfinger
+    - os
+    - os_family
+    source_files:
+      rsyslog-config-file-file-managed:
+      - example.tmpl.jinja
+  winner: pillar

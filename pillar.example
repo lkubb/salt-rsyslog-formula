@@ -1,0 +1,166 @@
+# -*- coding: utf-8 -*-
+# vim: ft=yaml
+# yamllint disable rule:comments-indentation
+---
+rsyslog:
+    # Configuration in /etc/rsyslog.conf.
+    # This is based on the Debian default.
+    # It mostly uses RainerScript, not the legacy format.
+  config:
+      # https://www.rsyslog.com/doc/v8-stable/rainerscript/global.html
+    global:
+      umask: '0022'
+      workDirectory: /var/spool/rsyslog
+      # List of config files to include. By default, it is required.
+      # Example:
+      # - /etc/some/file.conf
+      # - name: /etc/other/file.conf
+      #   mode: optional
+      #   type: file
+    include: []
+    modules:
+        # Mapping of modules to configuration.
+        # If enabled, they will be included in the default config.
+      imklog:
+        enabled: true
+        parameters: {}
+      imuxsock:
+        enabled: true
+        parameters: {}
+        # This is a builtin module and does not need to be enabled.
+        # It provides replacements for important directives though.
+      omfile:
+        parameters:
+          DirCreateMode: '0755'
+          FileCreateMode: '0640'
+          Template: RSYSLOG_TraditionalFileFormat
+          fileGroup: adm
+          fileOwner: root
+      # This is a list of outputs in very basic sysklogd syntax.
+      # It is mostly here to not break inbuilt logging.
+    outputs:
+      - filter: auth,authpriv.*
+        target: /var/log/auth.log
+      - filter: '*.*;auth,authpriv.none'
+        sync: false
+        target: /var/log/syslog
+      - filter: daemon.*
+        sync: false
+        target: /var/log/daemon.log
+      - filter: kern.*
+        sync: false
+        target: /var/log/kern.log
+      - filter: lpr.*
+        sync: false
+        target: /var/log/lpr.log
+      - filter: mail.*
+        sync: false
+        target: /var/log/mail.log
+      - filter: user.*
+        sync: false
+        target: /var/log/user.log
+      - filter: mail.info
+        sync: false
+        target: /var/log/mail.info
+      - filter: mail.warn
+        sync: false
+        target: /var/log/mail.warn
+      - filter: mail.err
+        target: /var/log/mail.err
+      - filter: '*.=debug;auth,authpriv.none;mail.none'
+        sync: false
+        target: /var/log/debug
+      - filter: '*.=info;*.=notice;*.=warn;auth,authpriv.none;cron,daemon.none;mail.none'
+        sync: false
+        target: /var/log/messages
+      - filter: '*.emerg'
+        target: :omusrmsg:*
+    # Custom configurations. Each key defines a file in /etc/rsyslog.d
+    #   Key: filename
+    #   Values: modules/templates/inputs/rulesets (as seen in server)
+  custom: {}
+    # This defines a special file called 10-remote.conf.
+    # It is currently the same as custom files, except that you can
+    # enable and disable it.
+  server:
+    enabled: false
+      # input() declarations. Key defines type, then one list item per input
+      # specifying parameters.
+    inputs:
+      imtcp:
+        - port: 6514
+          name: some_tcp_input
+          ruleset: some_ruleset
+        - port: 601
+          name: other_tcp_input
+          ruleset: some_other_ruleset
+      # Mapping of modules to parameters.
+    modules:
+        # Here, enabled is implied. To override, set to false.
+        # Set to empty dict for no parameters.
+      imtcp:
+        Threads: 1
+      # Mapping of ruleset names to parameters and content.
+      # The ruleset content is currently just a plain text block.
+    rulesets:
+      some_ruleset:
+        parameters: []
+        content: |
+          action(type="omfile" dynaFile="remote_logs")
+      some_other_ruleset:
+        parameters: []
+        content: |
+          cron.* action(type="omfile" file="/var/log/remote-601-cron")
+          mail.* action(type="omfile" file="/var/log/remote-601-mail")
+      # Mapping of template names to options.
+      # Rsyslog defines 4 types currently: plugin, string, subtree and list
+    templates:
+        # String templates are e.g. useful for dynamic filenames.
+      remote_logs:
+        type: string
+        value: /var/log/%hostname%/%programname%.log
+        # List templates have content.
+      some_list:
+        type: list
+          # Manage options.jsonf etc parameters (on list).
+        options:
+          jsonf: true
+          # List of property or constant items.
+        content:
+            # Mapping of parameters to values for the property.
+          - property:
+              name: msg
+              outname: message
+            # Constants are just strings.
+          - constant: '\n'
+
+  lookup:
+    configd: /etc/rsyslog.d
+
+  tofs:
+      # The files_switch key serves as a selector for alternative
+      # directories under the formula files directory. See TOFS pattern
+      # doc for more info.
+      # Note: Any value not evaluated by `config.get` will be used literally.
+      # This can be used to set custom paths, as many levels deep as required.
+    files_switch:
+      - any/path/can/be/used/here
+      - id
+      - roles
+      - osfinger
+      - os
+      - os_family
+
+      # All aspects of path/file resolution are customisable using the options below.
+      # This is unnecessary in most cases; there are sensible defaults.
+      # Default path: salt://< path_prefix >/< dirs.files >/< dirs.default >
+      # I.e.: salt://rsyslog/files/default
+      # path_prefix: template_alt
+      # dirs:
+      #   files: files_alt
+      #   default: default_alt
+      # The entries under `source_files` are prepended to the default source files
+      # given for the state
+    source_files:
+      rsyslog-config-file-file-managed:
+        - 'rsync_alt.conf.j2'

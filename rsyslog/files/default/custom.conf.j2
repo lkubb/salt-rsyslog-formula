@@ -1,0 +1,76 @@
+{%- macro render_param(name, val) -%}
+{%-   if val in [true, false] -%}
+{{ name }}="{{ 'on' if val else 'off' }}"
+{%-   else -%}
+{{ name }}="{{ val }}"
+{%-   endif -%}
+{%- endmacro %}
+
+{%- macro render_params(params) -%}
+{%-   for var, val in params.items() %}
+  {{ render_param(var, val) }}
+{%-   endfor %}
+{%- endmacro -%}
+
+{%- macro render_module(load, params) %}
+module(load="{{ load }}"
+{{- render_params(params) }}
+)
+{%- endmacro %}
+
+{%- macro render_template(name, config) -%}
+{%- if config.type in ['plugin', 'string', 'subtree'] %}
+template(name="{{ name }}" type="{{ config.type }}" {{ config.type }}="{{ config.value }}")
+{%- elif config.type == 'list' %}
+template(name="{{ name }}" type="list"{%- for opt in config.get('options', {}) %} option.{{ opt }}="{{ 'on' if config.options[opt] else 'off' }}"{%- endfor -%}) {
+{%-   for statement in config.content -%}
+{%-     if 'constant' in statement %}
+  constant(value={{ statement['constant'] | json }})
+{%-     elif 'property' in statement %}
+  property({%- for var, val in statement.property.items() %}{{ var }}="{{ val }}"{% if not loop.last %} {% endif %}{%- endfor -%})
+{%-     endif %}
+{%-   endfor %}
+}
+{%- endif %}
+{%- endmacro -%}
+
+{%- macro render_ruleset(name, config) -%}
+ruleset(name="{{ name }}"{%- for var, val in config.get('parameters', {}).items() %} {{ render_param(var, val) }}{%- endfor -%}) {
+  {{ config.content | indent(2) }}
+}
+{%- endmacro -%}
+
+{%- macro render_input(type, params) -%}
+input(type="{{ type }}"{%- for var, val in params.items() %} {{ render_param(var, val) }}{%- endfor -%})
+{%- endmacro -%}
+
+## Custom configuration '{{ conf_name }}'.
+## This file is managed by Salt.
+## Manual changes might be overwritten.
+
+## Modules
+{%- for name, config in rsyslog.custom[conf_name].get('modules', {}).items() %}
+{%-   if config is not equalto false %}
+{{- render_module(name, config) }}
+{%    endif %}
+{%- endfor %}
+
+## Templates
+
+{%- for name, config in rsyslog.custom[conf_name].get('templates', {}).items() %}
+{{ render_template(name, config) }}
+{%- endfor %}
+
+## Rulesets
+
+{%- for name, config in rsyslog.custom[conf_name].get('rulesets', {}).items() %}
+
+{{ render_ruleset(name, config) }}
+{%- endfor %}
+
+## Inputs
+{%- for type, inputs in rsyslog.custom[conf_name].get('inputs', {}).items() %}
+{%-   for input in inputs %}
+{{ render_input(type, input) }}
+{%-   endfor %}
+{%- endfor %}
