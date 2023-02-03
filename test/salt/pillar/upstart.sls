@@ -7,6 +7,8 @@ rsyslog:
     # Just for testing purposes
     winner: lookup
     added_in_lookup: lookup_value
+    pkg:
+      name: rsyslog
     config: '/etc/rsyslog.conf'
     service:
       name: rsyslog
