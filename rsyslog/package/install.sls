@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 # vim: ft=sls
 
-{%- set tplroot = tpldir.split('/')[0] %}
+{%- set tplroot = tpldir.split("/")[0] %}
 {%- from tplroot ~ "/map.jinja" import mapdata as rsyslog with context %}
 
-rsyslog-package-install-pkg-installed:
+Rsyslog is installed:
   pkg.installed:
     - name: {{ rsyslog.lookup.pkg.name }}

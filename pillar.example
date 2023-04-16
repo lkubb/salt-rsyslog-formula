@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # vim: ft=yaml
 # yamllint disable rule:comments-indentation
 ---
@@ -70,7 +69,7 @@ rsyslog:
       - filter: '*.=debug;auth,authpriv.none;mail.none'
         sync: false
         target: /var/log/debug
-      - filter: '*.=info;*.=notice;*.=warn;auth,authpriv.none;cron,daemon.none;mail.none'
+      - filter: '*.=info;*.=notice;*.=warn;auth,authpriv.none;cron,daemon.none;mail.none'  # yamllint disable-line rule:line-length
         sync: false
         target: /var/log/messages
       - filter: '*.emerg'
@@ -162,5 +161,5 @@ rsyslog:
       # The entries under `source_files` are prepended to the default source files
       # given for the state
     source_files:
-      rsyslog-config-file-file-managed:
+      Rsyslog configuration is managed:
         - 'rsync_alt.conf.j2'
