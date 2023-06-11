@@ -3,7 +3,7 @@
 {%- set tplroot = tpldir.split("/")[0] %}
 {%- set sls_package_install = tplroot ~ ".package.install" %}
 {%- from tplroot ~ "/map.jinja" import mapdata as rsyslog with context %}
-{%- from tplroot ~ "/libtofs.jinja" import files_switch with context %}
+{%- from tplroot ~ "/libtofsstack.jinja" import files_switch with context %}
 
 include:
   - {{ sls_package_install }}
@@ -11,8 +11,10 @@ include:
 Rsyslog configuration is managed:
   file.managed:
     - name: {{ rsyslog.lookup.config }}
-    - source: {{ files_switch(["rsyslog.conf.j2"],
-                              lookup="Rsyslog configuration is managed"
+    - source: {{ files_switch(
+                    ["rsyslog.conf", "rsyslog.conf.j2"],
+                    config=rsyslog,
+                    lookup="Rsyslog configuration is managed",
                  )
               }}
     - mode: '0644'
@@ -31,8 +33,10 @@ Rsyslog configuration is managed:
 Rsyslog server is configured:
   file.managed:
     - name: {{ rsyslog.lookup.configd | path_join("10-remote.conf") }}
-    - source: {{ files_switch(["server.conf.j2"],
-                              lookup="Rsyslog server is configured"
+    - source: {{ files_switch(
+                    ["server.conf", "server.conf.j2"],
+                    config=rsyslog,
+                    lookup="Rsyslog server is configured",
                  )
               }}
     - mode: '0644'
@@ -56,8 +60,10 @@ Rsyslog custom configuration is managed:
         - context:
             conf_name: {{ name }}
 {%-   endfor %}
-    - source: {{ files_switch(["custom.conf.j2"],
-                              lookup="Rsyslog custom configuration is managed"
+    - source: {{ files_switch(
+                    ["custom.conf", "custom.conf.j2"],
+                    config=rsyslog,
+                    lookup="Rsyslog custom configuration is managed",
                  )
               }}
     - mode: '0644'

@@ -47,7 +47,7 @@ uninstalls the package.
 ``rsyslog.package.clean``
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 Removes the rsyslog package.
-Has a depency on `rsyslog.config.clean`_.
+Has a dependency on `rsyslog.config.clean`_.
 
 
 ``rsyslog.config.clean``
